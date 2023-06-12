@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using MoneyManager.API.Auth.Infrastructure;
+using OneOf;
 
 namespace MoneyManager.API.Auth.SignIn;
 
@@ -7,30 +8,26 @@ namespace MoneyManager.API.Auth.SignIn;
 [AllowAnonymous]
 public class SignInEndpoint : Endpoint<SignInRequest>
 {
-    private readonly UserCreator _userCreator;
     private readonly ITokenGenerator _tokenGenerator;
+    public SignInEndpoint(ITokenGenerator tokenGenerator) => _tokenGenerator = tokenGenerator;
 
-    public SignInEndpoint(UserCreator userCreator, ITokenGenerator tokenGenerator)
+    public override async Task HandleAsync(SignInRequest request, CancellationToken cancellation)
     {
-        _userCreator = userCreator;
-        _tokenGenerator = tokenGenerator;
-    }
-
-    public override async Task HandleAsync(SignInRequest request, CancellationToken ct) =>
-        await (await _userCreator.Execute(request.Name, request.Password))
+        var userOrErrors = await request.ExecuteAsync(cancellation);
+        await userOrErrors
             .Match(
                 user => SendOkAsync(
                     new SingInResponse(
                         _tokenGenerator.Execute(user).ToString(),
                         user.ToDto()),
-                    cancellation: ct),
+                    cancellation),
                 errors => SendAsync(
-                    new ErrorResponse(
-                        errors.Select(error => error.FormatError()).ToList()),
+                    new ErrorResponse(errors.Select(error => error.FormatError()).ToList()),
                     400,
-                    cancellation: ct)
+                    cancellation)
             );
+    }
 }
 
-public record SignInRequest(string Name, string Password);
+public record SignInRequest(string Name, string Password) : ICommand<OneOf<User, IEnumerable<CreateUserError>>>;
 public record SingInResponse(string Token, UserDto User);

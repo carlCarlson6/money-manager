@@ -6,10 +6,10 @@ using static System.Security.Cryptography.RandomNumberGenerator;
 
 namespace MoneyManager.API.Auth;
 
-public record User(string Id, string Name, string HashedPassword)
+public record User(Guid Id, string Name, string HashedPassword)
 {
     public static User CreateNewUser(string name, string password) => new(
-        NewGuid().ToString(),
+        NewGuid(),
         name,
         HashPassword(password));
 
@@ -35,7 +35,7 @@ public record User(string Id, string Name, string HashedPassword)
         return true;
     }
 
-    public UserDto ToDto() => new(Id, Name);
+    public UserDto ToDto() => new(Id.ToString(), Name);
 
 }
 

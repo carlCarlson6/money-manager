@@ -15,7 +15,7 @@ public class FastEndpointsTokenGenerator : ITokenGenerator
         expireAt: DateTime.UtcNow.AddHours(8),
         claims: new (string claimType, string claimValue)[]
         {
-            (ClaimTypes.NameIdentifier, user.Id),
+            (ClaimTypes.NameIdentifier, user.Id.ToString()),
             (ClaimTypes.Name, user.Name)
         }));
 }
